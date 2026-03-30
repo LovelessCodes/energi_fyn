@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energi Fyn",
+        "description": "Connect to your Energi Fyn account. You'll need an API token from {url}.",
+        "data": {
+          "token": "API Token"
+        },
+        "data_description": {
+          "token": "Paste your Bearer token here"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid token. Please check and try again.",
+      "cannot_connect": "Cannot connect to Energi Fyn API."
+    }
+  }
+}
