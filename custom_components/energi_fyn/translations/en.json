@@ -3,18 +3,18 @@
     "step": {
       "user": {
         "title": "Energi Fyn",
-        "description": "Connect to your Energi Fyn account. You'll need an API token from {url}.",
+        "description": "To find your refresh token:\n\n1. Login to Mit Energi Fyn at {url}\n2. Open Developer Tools (F12) → Application → Session Storage\n3. Find key: {storage_key}\n4. Copy the refresh_token value (long string)\n\nThe integration will automatically refresh this token when it expires.",
         "data": {
-          "token": "API Token"
+          "refresh_token": "Refresh Token"
         },
         "data_description": {
-          "token": "Paste your Bearer token here"
+          "refresh_token": "Paste the refresh_token from browser session storage"
         }
       }
     },
     "error": {
-      "invalid_auth": "Invalid token. Please check and try again.",
-      "cannot_connect": "Cannot connect to Energi Fyn API."
+      "invalid_auth": "Invalid refresh token. Please copy it again from session storage.",
+      "cannot_connect": "Cannot connect to Energi Fyn API. Check your internet connection."
     }
   }
 }
