@@ -2,7 +2,6 @@
 
 import logging
 import time
-from datetime import datetime, timezone
 
 import async_timeout
 from homeassistant.config_entries import ConfigEntry
@@ -53,7 +52,7 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Refreshing access token")
 
         try:
-            with async_timeout.timeout(30):
+            async with async_timeout.timeout(30):
                 resp = await self.session.post(
                     TOKEN_URL,
                     data={
@@ -107,7 +106,7 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
         try:
-            with async_timeout.timeout(30):
+            async with async_timeout.timeout(30):
                 return await self._fetch_data(headers)
 
         except Exception as err:
