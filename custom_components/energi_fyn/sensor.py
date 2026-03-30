@@ -55,7 +55,6 @@ class EnergiFynConsumptionSensor(CoordinatorEntity, SensorEntity):
             name=f"{estate['address']}",
             manufacturer="Energi Fyn",
             model=product.get("productName", "Electricity"),
-            via_device=(DOMAIN, estate_id),
         )
 
     @property
