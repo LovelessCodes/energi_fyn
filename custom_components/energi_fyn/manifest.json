@@ -7,5 +7,6 @@
   "documentation": "https://github.com/lovelesscodes/energi_fyn",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "issue_tracker": "https://github.com/LovelessCodes/energi_fyn/issues"
 }
