@@ -2,6 +2,7 @@
 
 import logging
 import time
+from datetime import datetime
 
 import async_timeout
 from homeassistant.config_entries import ConfigEntry
@@ -186,5 +187,17 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
                             "installation_id": installation_id,
                         },
                     }
+
+                    date_str = datetime.now().strftime("%d-%m-%Y")
+                    resp = await self.session.get(
+                        f"https://api.energifyn.dk/api/graph/consumptionprice/customer/{customer_number}/estate/{estate_id}/installation/{installation_id}",
+                        headers=headers,
+                        params={"date": date_str},
+                    )
+                    resp.raise_for_status()
+                    price_data = await resp.json()
+
+                    # Store with the consumption data
+                    all_consumption_data[unique_key]["price_data"] = price_data
 
         return all_consumption_data
