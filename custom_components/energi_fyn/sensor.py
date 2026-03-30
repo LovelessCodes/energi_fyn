@@ -66,12 +66,7 @@ class EnergiFynPriceSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data.get(self.unique_key, {})
         price_data = data.get("price_data", {})
 
-        # Use the pre-calculated current price
-        current_price = price_data.get("currentCustomerPowerPrice")
-        if current_price is not None:
-            return round(float(current_price), 4)
-
-        # Fallback: calculate from hourly list if current is missing
+        # Calculate from hourly list if current is missing
         customer_prices = price_data.get("customerPrices", {})
         if not customer_prices:
             return None
@@ -95,6 +90,11 @@ class EnergiFynPriceSensor(CoordinatorEntity, SensorEntity):
                 return round(
                     float(hour_data.get("price", 0) + hour_data.get("tarifPrice", 0)), 4
                 )
+
+        # Fallback: Use the pre-calculated current price
+        current_price = price_data.get("currentCustomerPowerPrice")
+        if current_price is not None:
+            return round(float(current_price), 4)
 
         return None
 
