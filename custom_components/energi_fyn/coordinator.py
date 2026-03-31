@@ -133,6 +133,9 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
             return {}
 
         all_consumption_data = {}
+        now = datetime.now()
+        current_year = now.year - 1 if (now.month == 1 and now.day == 1) else now.year
+        current_month = (now.month - 2) % 12 + 1 if now.day == 1 else now.month
 
         for customer in customers:
             customer_number = customer["customerNumber"]
@@ -166,20 +169,74 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
                     if not installation_id or not meter_id:
                         continue
 
-                    # Step 4: Get consumption
-                    resp = await self.session.get(
-                        f"{API_BASE_CONSUMPTION}/consumptions/{customer_number}/{estate_id}/{meter_id}/{installation_id}/null/total",
-                        headers=headers,
+                    base_url = f"{API_BASE_CONSUMPTION}/consumptions/{customer_number}/{estate_id}/{meter_id}/{installation_id}/null"
+
+                    # Fetch total (base - updates yearly)
+                    resp_total = await self.session.get(
+                        f"{base_url}/total", headers=headers
                     )
-                    resp.raise_for_status()
-                    consumption = await resp.json()
+                    resp_total.raise_for_status()
+                    data_total = await resp_total.json()
+
+                    # Fetch current year (updates monthly)
+                    resp_year = await self.session.get(
+                        f"{base_url}/year",
+                        headers=headers,
+                        params={"year": current_year},
+                    )
+                    resp_year.raise_for_status()
+                    data_year = await resp_year.json()
+
+                    # Fetch current month (updates daily, lags 1 day)
+                    resp_month = await self.session.get(
+                        f"{base_url}/month",
+                        headers=headers,
+                        params={"year": current_year, "month": current_month},
+                    )
+                    # Month might return 404 on 1st of month before data available
+                    month_val = 0
+                    if resp_month.status == 200:
+                        data_month = await resp_month.json()
+                        month_val = float(
+                            data_month.get("consumption")
+                            or data_month.get("value")
+                            or 0
+                        )
+                    elif resp_month.status == 404:
+                        _LOGGER.debug(
+                            "Month data not yet available for %s-%s",
+                            current_year,
+                            current_month,
+                        )
+
+                    # Extract values - adjust keys if your API uses different field names
+                    total_val = float(
+                        data_total.get("consumption")
+                        or data_total.get("value")
+                        or data_total.get("total")
+                        or 0
+                    )
+                    year_val = float(
+                        data_year.get("consumption")
+                        or data_year.get("value")
+                        or data_year.get("total")
+                        or 0
+                    )
+
+                    # Calculate cumulative: base + year-to-date + month-to-date
+                    cumulative = total_val + year_val + month_val
 
                     unique_key = f"{customer_number}_{estate_id}_{meter_id}"
                     all_consumption_data[unique_key] = {
                         "customer": customer,
                         "estate": estate,
                         "product": product,
-                        "consumption": consumption,
+                        "consumption": cumulative,  # Now a float (kWh)
+                        "consumption_breakdown": {
+                            "base_total": total_val,
+                            "year_to_date": year_val,
+                            "month_to_date": month_val,
+                        },
                         "ids": {
                             "customer_number": customer_number,
                             "estate_id": estate_id,
@@ -188,16 +245,16 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
                         },
                     }
 
-                    date_str = datetime.now().strftime("%d-%m-%Y")
-                    resp = await self.session.get(
+                    # Fetch price data (optional)
+                    date_str = now.strftime("%d-%m-%Y")
+                    resp_price = await self.session.get(
                         f"https://api.energifyn.dk/api/graph/consumptionprice/customer/{customer_number}/estate/{estate_id}/installation/{installation_id}",
                         headers=headers,
                         params={"date": date_str},
                     )
-                    resp.raise_for_status()
-                    price_data = await resp.json()
-
-                    # Store with the consumption data
-                    all_consumption_data[unique_key]["price_data"] = price_data
+                    if resp_price.status == 200:
+                        all_consumption_data[unique_key][
+                            "price_data"
+                        ] = await resp_price.json()
 
         return all_consumption_data
