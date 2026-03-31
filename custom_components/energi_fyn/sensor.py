@@ -22,13 +22,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     for unique_key, data in coordinator.data.items():
         estate = data["estate"]
         product = data["product"]
-        consumption = data["consumption"]
 
         # Create total consumption sensor
         entities.append(
-            EnergiFynConsumptionSensor(
-                coordinator, unique_key, estate, product, consumption
-            )
+            EnergiFynConsumptionSensor(coordinator, unique_key, estate, product)
         )
 
         entities.append(EnergiFynPriceSensor(coordinator, unique_key, estate, product))
@@ -148,7 +145,7 @@ class EnergiFynConsumptionSensor(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, coordinator, unique_key, estate, product, consumption):
+    def __init__(self, coordinator, unique_key, estate, product):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.unique_key = unique_key
@@ -170,34 +167,23 @@ class EnergiFynConsumptionSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Return total consumption."""
         data = self.coordinator.data.get(self.unique_key, {})
-        consumption = data.get("consumption", {})
-
-        # Return the total from summary, or sum of items if no total
-        summary = consumption.get("summary", {})
-        total = summary.get("total")
-
-        if total is not None:
-            return float(total)
-
-        # Fallback: sum of all items
-        items = consumption.get("items", [])
-        if items:
-            return sum(float(item["value"]) for item in items if item.get("value"))
-
-        return None
+        if not data:
+            return None
+        return data.get("consumption")
 
     @property
     def extra_state_attributes(self):
         """Return additional stats."""
         data = self.coordinator.data.get(self.unique_key, {})
-        consumption = data.get("consumption", {})
-        summary = consumption.get("summary", {})
+        if not data:
+            return None
+
+        breakdown = data.get("consumption_breakdown", {})
 
         return {
-            "average": summary.get("avg"),
-            "minimum": summary.get("min"),
-            "maximum": summary.get("max"),
-            "unit": consumption.get("unit"),
+            "base_total": breakdown.get("base_total"),
+            "year_to_date": breakdown.get("year_to_date"),
+            "month_to_date": breakdown.get("month_to_date"),
             "product_name": data.get("product", {}).get("productName"),
             "tariff": data.get("product", {}).get("tarifArt"),
             "subscription_state": data.get("product", {}).get("subscriptionState"),
