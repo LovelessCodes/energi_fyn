@@ -1,4 +1,8 @@
-# Energi Fyn for Home Assistant
+![Header](header.png)
+
+---
+
+# Energi Fyn x Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![Home Assistant](https://img.shields.io/badge/home%20assistant-%3E%3D2026.3.4-blue.svg?style=for-the-badge)](https://www.home-assistant.io)
