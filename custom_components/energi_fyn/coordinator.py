@@ -27,6 +27,10 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def extract_total(data):
+    return float(data.get("summary", {}).get("total", 0))
+
+
 class EnergiFynCoordinator(DataUpdateCoordinator):
     """Coordinator to fetch data from Energi Fyn API."""
 
@@ -193,35 +197,14 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
                         headers=headers,
                         params={"year": current_year, "month": current_month},
                     )
-                    # Month might return 404 on 1st of month before data available
                     month_val = 0
                     if resp_month.status == 200:
                         data_month = await resp_month.json()
-                        month_val = float(
-                            data_month.get("consumption")
-                            or data_month.get("value")
-                            or 0
-                        )
-                    elif resp_month.status == 404:
-                        _LOGGER.debug(
-                            "Month data not yet available for %s-%s",
-                            current_year,
-                            current_month,
-                        )
+                        month_val = extract_total(data_month)
 
-                    # Extract values - adjust keys if your API uses different field names
-                    total_val = float(
-                        data_total.get("consumption")
-                        or data_total.get("value")
-                        or data_total.get("total")
-                        or 0
-                    )
-                    year_val = float(
-                        data_year.get("consumption")
-                        or data_year.get("value")
-                        or data_year.get("total")
-                        or 0
-                    )
+                    # Extract total and year-to-date values
+                    total_val = extract_total(data_total)
+                    year_val = extract_total(data_year)
 
                     # Calculate cumulative: base + year-to-date + month-to-date
                     cumulative = total_val + year_val + month_val
@@ -231,7 +214,7 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
                         "customer": customer,
                         "estate": estate,
                         "product": product,
-                        "consumption": cumulative,  # Now a float (kWh)
+                        "consumption": cumulative,
                         "consumption_breakdown": {
                             "base_total": total_val,
                             "year_to_date": year_val,
@@ -245,7 +228,6 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
                         },
                     }
 
-                    # Fetch price data (optional)
                     date_str = now.strftime("%d-%m-%Y")
                     resp_price = await self.session.get(
                         f"https://api.energifyn.dk/api/graph/consumptionprice/customer/{customer_number}/estate/{estate_id}/installation/{installation_id}",
