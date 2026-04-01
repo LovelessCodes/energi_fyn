@@ -40,11 +40,17 @@ class EnergiFynCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=UPDATE_INTERVAL,
+            update_interval=None,
         )
         self.entry = entry
         self.session = async_get_clientsession(hass)
         self._update_token_from_entry()
+
+    async def async_hourly_refresh(self, now: datetime | None = None) -> None:
+        """Refresh data at the start of each hour."""
+        _LOGGER.info("Hourly refresh triggered at %s", now)
+        await self.async_request_refresh()
+        _LOGGER.info("Hourly refresh completed")
 
     def _update_token_from_entry(self):
         """Update local token variables from config entry."""
