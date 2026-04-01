@@ -107,8 +107,8 @@ This integration communicates with Energi Fyn's Azure-based API infrastructure:
 
 ## Roadmap
 
-- [ ] Automatic token refresh using email/password authentication
-- [ ] Spot price integration for real-time electricity pricing
+- [x] Automatic token refresh using ~~email/password~~ Refresh Token authentication
+- [x] Price integration for real-time electricity pricing
 
 ## Disclaimer
 
