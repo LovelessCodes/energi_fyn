@@ -21,7 +21,6 @@ from .const import (
     CONF_TOKEN_EXPIRES,
     DOMAIN,
     TOKEN_URL,
-    UPDATE_INTERVAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
